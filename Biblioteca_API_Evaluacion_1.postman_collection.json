@@ -1,0 +1,643 @@
+{
+  "info": {
+    "_postman_id": "b1b1107e-ca89-42b8-9e67-biblioteca-kinal",
+    "name": "Biblioteca API - Evaluación 1",
+    "description": "Colección completa para pruebas de la API REST de Gestión de Biblioteca (Evaluación 1). Incluye flujos de autenticación, gestión de libros, préstamos, devoluciones, control de acceso por roles y pruebas de reglas de negocio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lectorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "libroId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "prestamoId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "A. Autenticación y Registro",
+      "item": [
+        {
+          "name": "1. Registrar Lector",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 or 400\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"lectorToken\", jsonData.token || jsonData.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Lector de Pruebas\",\n  \"email\": \"lector.postman@biblioteca.com\",\n  \"password\": \"Lector123*\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registra un nuevo usuario con rol por defecto LECTOR (Público)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "var token = jsonData.token || jsonData.accessToken;",
+                  "pm.collectionVariables.set(\"adminToken\", token);",
+                  "pm.test(\"Admin token obtenido correctamente\", function () {",
+                  "    pm.expect(token).to.not.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@biblioteca.com\",\n  \"password\": \"Admin123*\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autenticación del Administrador inicial sembrado en data.sql. Guarda el token en adminToken."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Login Lector",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "var token = jsonData.token || jsonData.accessToken;",
+                  "pm.collectionVariables.set(\"lectorToken\", token);",
+                  "pm.test(\"Lector token obtenido correctamente\", function () {",
+                  "    pm.expect(token).to.not.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"lector.postman@biblioteca.com\",\n  \"password\": \"Lector123*\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autenticación del usuario LECTOR. Guarda el token en lectorToken."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "B. Gestión de Libros",
+      "item": [
+        {
+          "name": "1. Crear Libro (Rol ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"libroId\", jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0134685999\",\n  \"titulo\": \"Domain-Driven Design\",\n  \"autor\": \"Eric Evans\",\n  \"categoria\": \"Arquitectura\",\n  \"stockTotal\": 5,\n  \"stockDisponible\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/libros",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros"]
+            },
+            "description": "Crea un libro en el catálogo (Requiere ADMIN)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Crear Libro con Rol LECTOR (Debe dar 403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{lectorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0000000001\",\n  \"titulo\": \"Libro No Autorizado\",\n  \"autor\": \"Anonimo\",\n  \"categoria\": \"General\",\n  \"stockTotal\": 1,\n  \"stockDisponible\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/libros",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros"]
+            },
+            "description": "Verifica que usuarios con rol LECTOR no puedan crear libros (Control de Acceso)."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Listar Libros (Paginado y Filtros)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Respuesta contiene lista o contenido paginado\", function () {",
+                  "    pm.expect(jsonData.content || jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/libros?page=0&size=10&titulo=&categoria=",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "titulo",
+                  "value": ""
+                },
+                {
+                  "key": "categoria",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Consulta el catálogo de libros con paginación y filtros opcionales (Autenticado)."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Obtener Libro por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Contiene id y titulo\", function () {",
+                  "    pm.expect(jsonData.id).to.exist;",
+                  "    pm.expect(jsonData.titulo).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/libros/{{libroId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros", "{{libroId}}"]
+            },
+            "description": "Obtiene el detalle completo de un libro específico (Autenticado)."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Actualizar Libro (Rol ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0134685999\",\n  \"titulo\": \"Domain-Driven Design (Actualizado)\",\n  \"autor\": \"Eric Evans\",\n  \"categoria\": \"Arquitectura\",\n  \"stockTotal\": 8,\n  \"stockDisponible\": 8\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/libros/{{libroId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros", "{{libroId}}"]
+            },
+            "description": "Actualiza la información o stock de un libro (Requiere ADMIN)."
+          },
+          "response": []
+        },
+        {
+          "name": "6. Eliminar Libro (Borrado Lógico - Rol ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/libros/{{libroId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["libros", "{{libroId}}"]
+            },
+            "description": "Aplica borrado lógico al libro desactivando activo = false (Requiere ADMIN)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "C. Gestión de Préstamos",
+      "item": [
+        {
+          "name": "1. Registrar Préstamo (Rol ADMIN o BIBLIOTECARIO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) {",
+                  "    pm.collectionVariables.set(\"prestamoId\", jsonData.id);",
+                  "}",
+                  "pm.test(\"Prestamo creado con 14 dias de plazo\", function () {",
+                  "    pm.expect(jsonData.estado).to.eql(\"ACTIVO\");",
+                  "    pm.expect(jsonData.fechaDevolucionEsperada).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"libroId\": 1,\n  \"usuarioId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/prestamos",
+              "host": ["{{baseUrl}}"],
+              "path": ["prestamos"]
+            },
+            "description": "Registra la salida de un libro con plazo de 14 días y valida las 4 reglas de negocio (Requiere ADMIN o BIBLIOTECARIO)."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Registrar Devolución (Rol ADMIN o BIBLIOTECARIO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Prestamo marcado como DEVUELTO con fechaDevolucionReal\", function () {",
+                  "    pm.expect(jsonData.estado).to.eql(\"DEVUELTO\");",
+                  "    pm.expect(jsonData.fechaDevolucionReal).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/prestamos/{{prestamoId}}/devolucion",
+              "host": ["{{baseUrl}}"],
+              "path": ["prestamos", "{{prestamoId}}", "devolucion"]
+            },
+            "description": "Registra la entrega del libro, restaura el stock disponible y marca el préstamo como DEVUELTO (Requiere ADMIN o BIBLIOTECARIO)."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Mis Préstamos (Rol LECTOR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Retorna arreglo de prestamos\", function () {",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{lectorToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/prestamos/mis-prestamos",
+              "host": ["{{baseUrl}}"],
+              "path": ["prestamos", "mis-prestamos"]
+            },
+            "description": "Obtiene el historial y préstamos activos del usuario autenticado (Exclusivo Rol LECTOR)."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Préstamos Atrasados (Rol ADMIN o BIBLIOTECARIO)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Retorna lista de prestamos atrasados\", function () {",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/prestamos/atrasados",
+              "host": ["{{baseUrl}}"],
+              "path": ["prestamos", "atrasados"]
+            },
+            "description": "Lista los préstamos activos cuya fecha de devolución esperada ya venció (Requiere ADMIN o BIBLIOTECARIO)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Configuracion sensible
+src/main/resources/application.properties
+
+# Documentos y entregables locales
+*.docx
