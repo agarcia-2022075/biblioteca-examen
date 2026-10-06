@@ -27,8 +27,8 @@ public interface LibroRepository extends JpaRepository<Libro, Long> {
     Optional<Libro> findByIdWithLock(@Param("id") Long id);
 
     @Query("SELECT l FROM Libro l WHERE l.activo = true AND " +
-           "(:titulo IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', :titulo, '%'))) AND " +
-           "(:categoria IS NULL OR LOWER(l.categoria) = LOWER(:categoria))")
+           "(cast(:titulo as string) IS NULL OR LOWER(l.titulo) LIKE LOWER(CONCAT('%', cast(:titulo as string), '%'))) AND " +
+           "(cast(:categoria as string) IS NULL OR LOWER(l.categoria) = LOWER(cast(:categoria as string)))")
     Page<Libro> buscarLibros(@Param("titulo") String titulo,
                              @Param("categoria") String categoria,
                              Pageable pageable);
